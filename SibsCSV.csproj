@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <NeutralLanguage>en-US</NeutralLanguage>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Копировать все зависимости (NuGet-пакеты) в выходную папку при сборке -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- Папка, куда соберётся готовый модуль -->
+    <ModuleOutputDir>$(MSBuildProjectDirectory)\distrib\Module\$(AssemblyName)</ModuleOutputDir>
+  </PropertyGroup>
+
+  <!-- Подключаем SDK PowerShell, но НЕ копируем его системные файлы в папку модуля -->
+  <ItemGroup>
+    <PackageReference Include="System.Management.Automation" Version="7.6.*">
+      <Private>false</Private>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- Копируем манифест (и любые .ps1/.psm1 файлы, если есть) в выходную папку -->
+  <ItemGroup>
+    <None Update="src\Module\SibsCSV.psd1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>SibsCSV.psd1</Link>
+    </None>
+  </ItemGroup>
+
+  <!-- Автоматическая сборка чистого пакета модуля после Build -->
+  <Target Name="PackageModule" AfterTargets="Build">
+    <ItemGroup>
+      <ModuleFiles Include="$(OutputPath)**\*" />
+    </ItemGroup>
+    <RemoveDir Directories="$(ModuleOutputDir)" />
+    <Copy SourceFiles="@(ModuleFiles)" DestinationFolder="$(ModuleOutputDir)\%(RecursiveDir)" />
+    <Message Text="Готовый модуль собран в: $(ModuleOutputDir)" Importance="high" />
+  </Target>
+
+<ItemGroup>
+  <!-- Применяем ко всем основным .resx файлам (исключая локализации вида Resources.ru.resx) -->
+  <EmbeddedResource Update="**\*.resx" Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('%(Filename)', '\.[a-zA-Z]{2}(-[a-zA-Z0-9]+)?$'))">
+    <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+    <StronglyTypedNamespace>SIBS.PowerShell.CSV</StronglyTypedNamespace>
+    <StronglyTypedClassName>%(Filename)</StronglyTypedClassName>
+    <StronglyTypedFileName>$(MSBuildProjectDirectory)\gen\%(Filename).Designer.cs</StronglyTypedFileName>
+  </EmbeddedResource>
+</ItemGroup>
+<!-- 2. Перед самой компиляцией убираем дубль, который добавила задача GenerateResource, оставляя только тот файл, что уже нашел сам SDK -->
+<Target Name="RemoveDuplicateGeneratedResources" BeforeTargets="CoreCompile">
+  <ItemGroup>
+    <Compile Remove="$(MSBuildProjectDirectory)\gen\*.Designer.cs" />
+
+  </ItemGroup>
+</Target>
+</Project>
