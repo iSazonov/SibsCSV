@@ -14,10 +14,8 @@ if (-not (Test-Path $testFile)) {
     }
     $writer.Close()
     Write-Host "File is created in $($sw.Elapsed.TotalSeconds) sec. Size: $([math]::Round((Get-Item $testFile).Length / 1MB, 2)) MB"
-    Write-Progress -Activity "Create Test Data" -PercentComplete
+    Write-Progress -Activity "Create Test Data" -PercentComplete 100
 }
-
-$iterations = 5
 
 function Measure-CmdletAllocation {
     param(
@@ -26,7 +24,6 @@ function Measure-CmdletAllocation {
         [int]$Iterations = 5
     )
 
-    # 1. Прогрев JIT (не попадает в статистику)
     & $CommandBlock | Out-Null
 
     $metrics = for ($i = 1; $i -le $Iterations; $i++) {
@@ -60,7 +57,9 @@ function Measure-CmdletAllocation {
     [PSCustomObject]@{
         Test           = $Name
         AvgTime_ms     = [math]::Round(($metrics.TimeMs | Measure-Object -Average).Average, 2)
+        AvgTime_Ratio  = 100
         Allocated_MB   = [math]::Round(($metrics.AllocatedMB | Measure-Object -Average).Average, 2)
+        Alloc_Ratio    = 100
         Gen0_Collects  = [math]::Round(($metrics.Gen0 | Measure-Object -Average).Average, 1)
         Gen1_Collects  = [math]::Round(($metrics.Gen1 | Measure-Object -Average).Average, 1)
         Gen2_Collects  = [math]::Round(($metrics.Gen2 | Measure-Object -Average).Average, 1)
@@ -70,26 +69,31 @@ function Measure-CmdletAllocation {
 $report = @(
     $SibsCSV_Path = "$PSScriptRoot\..\distrib\Module\SibsCSV"
 
-    Write-Progress -Activity "Test Data" -Status "Built-in Import-Csv..."
+    Write-Progress -Activity "Test run" -Status "Built-in Import-Csv..."
     Measure-CmdletAllocation -Name "Built-in Import-Csv" -CommandBlock {
         $null = Microsoft.PowerShell.Utility\Import-Csv -Path $testFile
     }
-    Write-Progress -Activity "Test Data" -Status "SibsCSV Import-Csv..."
+    Write-Progress -Activity "Test run" -Status "SibsCSV Import-Csv..."
     Measure-CmdletAllocation -Name "SibsCSV Import-Csv" -CommandBlock {
         Import-Module $SibsCSV_Path
         $null = SibsCSV\Import-Csv -Path $testFile
     }
 
-    Write-Progress -Activity "Test Data" -Status "Built-in ConvertFrom-Csv..."
+    Write-Progress -Activity "Test run" -Status "Built-in ConvertFrom-Csv..."
     Measure-CmdletAllocation -Name "Built-in ConvertFrom-Csv" -CommandBlock {
         $null = Get-Content $testFile | Microsoft.PowerShell.Utility\ConvertFrom-Csv
     }
-    Write-Progress -Activity "Test Data" -Status "SibsCSV ConvertFrom-Csv..."
+    Write-Progress -Activity "Test run" -Status "SibsCSV ConvertFrom-Csv..."
     Measure-CmdletAllocation -Name "SibsCSV ConvertFrom-Csv" -CommandBlock {
         Import-Module $SibsCSV_Path
         $null = Get-Content $testFile | SibsCSV\ConvertFrom-Csv
     }
 )
+
+[int]$report[1].AvgTime_Ratio = [math]::Round($report[1].AvgTime_ms / $report[0].AvgTime_ms * 100, [MidpointRounding]::AwayFromZero)
+[int]$report[3].AvgTime_Ratio = [math]::Round($report[3].AvgTime_ms / $report[2].AvgTime_ms * 100, [MidpointRounding]::AwayFromZero)
+[int]$report[1].Alloc_Ratio = [math]::Round($report[1].Allocated_MB / $report[0].Allocated_MB * 100, [MidpointRounding]::AwayFromZero)
+[int]$report[3].Alloc_Ratio = [math]::Round($report[3].Allocated_MB / $report[2].Allocated_MB * 100, [MidpointRounding]::AwayFromZero)
 
 $report | Format-Table -AutoSize
 
