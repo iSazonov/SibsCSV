@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 > nul
 
-set "REPORT_DIR=%~dp0dist\TestResults"
+set "REPORT_DIR=%~dp0distrib\TestResults"
 if not exist "%REPORT_DIR%" mkdir "%REPORT_DIR%"
 
 dotnet build -c Release

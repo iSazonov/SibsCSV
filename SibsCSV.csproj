@@ -10,6 +10,7 @@
   <PropertyGroup>
     <!-- Копировать все зависимости (NuGet-пакеты) в выходную папку при сборке -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <ModuleVersion>1.0.0</ModuleVersion>
     <!-- Папка, куда соберётся готовый модуль -->
     <ModuleOutputDir>$(MSBuildProjectDirectory)\distrib\Module\$(AssemblyName)</ModuleOutputDir>
   </PropertyGroup>
@@ -36,7 +37,7 @@
       <ModuleFiles Include="$(OutputPath)**\*" />
     </ItemGroup>
     <RemoveDir Directories="$(ModuleOutputDir)" />
-    <Copy SourceFiles="@(ModuleFiles)" DestinationFolder="$(ModuleOutputDir)\%(RecursiveDir)" />
+    <Copy SourceFiles="@(ModuleFiles)" DestinationFolder="$(ModuleOutputDir)\$(ModuleVersion)\%(RecursiveDir)" />
     <Message Text="Готовый модуль собран в: $(ModuleOutputDir)" Importance="high" />
   </Target>
 
