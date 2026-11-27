@@ -5,6 +5,7 @@
         "blankspace",
         "blankspaces",
         "converttocsv",
+        "Diagnoser",
         "Dont",
         "exportcsv",
         "NTRAID",
@@ -12,10 +13,12 @@
         "prevalidated",
         "psadapted",
         "psextended",
+        "resx",
         "Runspaces",
         "runtests",
         "Sazonov",
         "SYSLIB",
         "Wildcarding"
-    ]
+    ],
+    "dotnet.defaultSolution": "SibsCSV.slnx"
 }

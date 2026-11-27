@@ -1,3 +1,5 @@
 <Solution>
-  <Project Path="SibsCSV.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/SibsCSV.csproj" />
+  </Folder>
 </Solution>

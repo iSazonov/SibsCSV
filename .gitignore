@@ -1,7 +1,8 @@
 bin/
 obj/
 distrib/
-perf/Results/
+Results/
+BenchmarkDotNet.Artifacts/
 
 # VS auto-generated files for csproj files
 *.csproj.user

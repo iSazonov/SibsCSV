@@ -8,14 +8,13 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Копировать все зависимости (NuGet-пакеты) в выходную папку при сборке -->
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <ModuleVersion>1.0.0</ModuleVersion>
-    <!-- Папка, куда соберётся готовый модуль -->
-    <ModuleOutputDir>$(MSBuildProjectDirectory)\distrib\Module\$(AssemblyName)</ModuleOutputDir>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- Output folder for the module -->
+    <ModuleOutputDir>$(MSBuildProjectDirectory)\..\distrib\Module\$(AssemblyName)</ModuleOutputDir>
   </PropertyGroup>
 
-  <!-- Подключаем SDK PowerShell, но НЕ копируем его системные файлы в папку модуля -->
+  <!-- Don't copy SDK PowerShell to output folder -->
   <ItemGroup>
     <PackageReference Include="System.Management.Automation" Version="7.6.*">
       <Private>false</Private>
@@ -23,26 +22,26 @@
     </PackageReference>
   </ItemGroup>
 
-  <!-- Копируем манифест (и любые .ps1/.psm1 файлы, если есть) в выходную папку -->
+  <!-- Copy the module manifest to output folder -->
   <ItemGroup>
-    <None Update="src\Module\SibsCSV.psd1">
+    <None Update="Module\SibsCSV.psd1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>SibsCSV.psd1</Link>
     </None>
   </ItemGroup>
 
-  <!-- Автоматическая сборка чистого пакета модуля после Build -->
+  <!-- Automatic copy the module to output folder -->
   <Target Name="PackageModule" AfterTargets="Build">
     <ItemGroup>
       <ModuleFiles Include="$(OutputPath)**\*" />
     </ItemGroup>
     <RemoveDir Directories="$(ModuleOutputDir)" />
     <Copy SourceFiles="@(ModuleFiles)" DestinationFolder="$(ModuleOutputDir)\$(ModuleVersion)\%(RecursiveDir)" />
-    <Message Text="Готовый модуль собран в: $(ModuleOutputDir)" Importance="high" />
+    <Message Text="The module folder: $(ModuleOutputDir)" Importance="high" />
   </Target>
 
 <ItemGroup>
-  <!-- Применяем ко всем основным .resx файлам (исключая локализации вида Resources.ru.resx) -->
+  <!-- Apply to all .resx files (excluding files like Resources.ru.resx) -->
   <EmbeddedResource Update="**\*.resx" Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('%(Filename)', '\.[a-zA-Z]{2}(-[a-zA-Z0-9]+)?$'))">
     <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
     <StronglyTypedNamespace>SIBS.PowerShell.CSV</StronglyTypedNamespace>
@@ -50,11 +49,11 @@
     <StronglyTypedFileName>$(MSBuildProjectDirectory)\gen\%(Filename).Designer.cs</StronglyTypedFileName>
   </EmbeddedResource>
 </ItemGroup>
-<!-- 2. Перед самой компиляцией убираем дубль, который добавила задача GenerateResource, оставляя только тот файл, что уже нашел сам SDK -->
+
+<!-- Remove duplicate files before compile. -->
 <Target Name="RemoveDuplicateGeneratedResources" BeforeTargets="CoreCompile">
   <ItemGroup>
     <Compile Remove="$(MSBuildProjectDirectory)\gen\*.Designer.cs" />
-
   </ItemGroup>
 </Target>
 </Project>
